@@ -1,5 +1,9 @@
 """
 safety.py — Audit logging and authorization layer for Agent 500.
+
+v2: registers the new diagnostic tools (all GREEN — read-only) and the new
+reset_opcache tool (YELLOW — mutates running worker state, needs approval).
+Unknown tools still default to RED; nothing changed about that guarantee.
 """
 
 import json
@@ -9,6 +13,7 @@ import os
 LOG_PATH = os.path.join(os.path.dirname(__file__), "logs", "audit.jsonl")
 
 TOOL_CLASSIFICATION = {
+    # existing diagnostics
     "http_check": "GREEN",
     "check_service": "GREEN",
     "check_port": "GREEN",
@@ -17,9 +22,19 @@ TOOL_CLASSIFICATION = {
     "nginx_config_test": "GREEN",
     "verify_http_check": "GREEN",
     "verify_disk_usage": "GREEN",
+    # new root-cause diagnostics (all read-only)
+    "analyze_log_patterns": "GREEN",
+    "check_file_permissions": "GREEN",
+    "check_socket": "GREEN",
+    "check_fpm_pool_status": "GREEN",
+    "check_selinux_denials": "GREEN",
+    "check_recent_file_changes": "GREEN",
+    "check_db_connectivity": "GREEN",
+    # mutating actions — require operator approval
     "restart_service": "YELLOW",
     "reload_workers": "YELLOW",
     "safe_log_cleanup": "YELLOW",
+    "reset_opcache": "YELLOW",
 }
 
 
