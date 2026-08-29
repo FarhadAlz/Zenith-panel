@@ -1,0 +1,76 @@
+"""
+safety.py — Audit logging and authorization layer for Agent 500.
+"""
+
+import json
+import time
+import os
+
+LOG_PATH = os.path.join(os.path.dirname(__file__), "logs", "audit.jsonl")
+
+TOOL_CLASSIFICATION = {
+    "http_check": "GREEN",
+    "check_service": "GREEN",
+    "check_port": "GREEN",
+    "disk_usage": "GREEN",
+    "read_log": "GREEN",
+    "nginx_config_test": "GREEN",
+    "verify_http_check": "GREEN",
+    "verify_disk_usage": "GREEN",
+    "restart_service": "YELLOW",
+    "reload_workers": "YELLOW",
+    "safe_log_cleanup": "YELLOW",
+}
+
+
+def audit(event: dict):
+    event["ts"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+    with open(LOG_PATH, "a", encoding="utf-8") as f:
+        f.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+
+def classify(tool_name: str) -> str:
+    return TOOL_CLASSIFICATION.get(tool_name, "RED")
+
+
+def request_approval(tool_name: str, args: dict, reason: str, auto_yes: bool = False) -> bool:
+    cls = classify(tool_name)
+    if cls == "RED":
+        audit({"type": "blocked_red_tool", "tool": tool_name, "args": args})
+        raise PermissionError(f"Tool '{tool_name}' is classified as RED and cannot be executed.")
+
+    if cls == "GREEN":
+        return True
+
+    print("\n" + "=" * 60)
+    print("⚠️  APPROVAL REQUESTED FOR MODIFICATION TOOL:")
+    print(f"    Tool   : {tool_name}")
+    print(f"    Args   : {args}")
+    print(f"    Reason : {reason}")
+    print("=" * 60)
+
+    if auto_yes:
+        approved = True
+    else:
+        answer = input("Approve execution? [y/N]: ").strip().lower()
+        approved = answer == "y"
+
+    audit(
+        {
+            "type": "approval_request",
+            "tool": tool_name,
+            "args": args,
+            "reason": reason,
+            "approved": approved,
+        }
+    )
+    return approved
+
+
+def log_tool_call(tool_name: str, args: dict, result: dict):
+    audit({"type": "tool_call", "tool": tool_name, "args": args, "result": result})
+
+
+def log_decision(text: str):
+    audit({"type": "decision", "text": text})
