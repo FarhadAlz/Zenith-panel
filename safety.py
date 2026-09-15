@@ -1,18 +1,24 @@
+
+Safety · PY
 """
 safety.py — Audit logging and authorization layer for Agent 500.
 
-v2: registers the new diagnostic tools (all GREEN — read-only) and the new
-reset_opcache tool (YELLOW — mutates running worker state, needs approval).
-Unknown tools still default to RED; nothing changed about that guarantee.
+v3: approval prompts and RED-block messages now render through colors.py
+for readable SSH-terminal output. No change to classification logic,
+audit log format, or the RED-defaults-to-blocked guarantee.
 """
 
 import json
 import time
 import os
 
+import colors
+
 LOG_PATH = os.path.join(os.path.dirname(__file__), "logs", "audit.jsonl")
 
 TOOL_CLASSIFICATION = {
+    # domain resolution — must run first, every investigation (read-only)
+    "resolve_domain": "GREEN",
     # existing diagnostics
     "http_check": "GREEN",
     "check_service": "GREEN",
@@ -22,7 +28,7 @@ TOOL_CLASSIFICATION = {
     "nginx_config_test": "GREEN",
     "verify_http_check": "GREEN",
     "verify_disk_usage": "GREEN",
-    # new root-cause diagnostics (all read-only)
+    # root-cause diagnostics (all read-only)
     "analyze_log_patterns": "GREEN",
     "check_file_permissions": "GREEN",
     "check_socket": "GREEN",
@@ -30,6 +36,11 @@ TOOL_CLASSIFICATION = {
     "check_selinux_denials": "GREEN",
     "check_recent_file_changes": "GREEN",
     "check_db_connectivity": "GREEN",
+    # config/source inspection (read-only; never executes/modifies the file)
+    "read_file": "GREEN",
+    "php_lint": "GREEN",
+    "inspect_php_file": "GREEN",
+    "check_php_ini": "GREEN",
     # mutating actions — require operator approval
     "restart_service": "YELLOW",
     "reload_workers": "YELLOW",
@@ -53,23 +64,21 @@ def request_approval(tool_name: str, args: dict, reason: str, auto_yes: bool = F
     cls = classify(tool_name)
     if cls == "RED":
         audit({"type": "blocked_red_tool", "tool": tool_name, "args": args})
+        print(colors.blocked_red(tool_name))
         raise PermissionError(f"Tool '{tool_name}' is classified as RED and cannot be executed.")
 
     if cls == "GREEN":
         return True
 
-    print("\n" + "=" * 60)
-    print("⚠️  APPROVAL REQUESTED FOR MODIFICATION TOOL:")
-    print(f"    Tool   : {tool_name}")
-    print(f"    Args   : {args}")
-    print(f"    Reason : {reason}")
-    print("=" * 60)
+    print("\n" + colors.approval_box(tool_name, args, reason))
 
     if auto_yes:
         approved = True
     else:
-        answer = input("Approve execution? [y/N]: ").strip().lower()
+        answer = input(colors.c("Approve execution? [y/N]: ", colors.Fg.YELLOW, bold=True)).strip().lower()
         approved = answer == "y"
+
+    print(colors.approval_result(approved))
 
     audit(
         {
