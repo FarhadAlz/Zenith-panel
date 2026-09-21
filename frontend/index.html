@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zenith — پنل مدیریت و رفع خودکار خطاهای سرور</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ============== SETUP / UNLOCK SCREEN ============== -->
+<div id="authScreen" class="auth-screen hidden">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="brand-name">
+        <span class="logo-mark">Z</span>
+        <span class="logo-word">enith</span>
+      </span>
+    </div>
+    <h1 id="authTitle">راه‌اندازی صندوق امن</h1>
+    <p id="authSubtitle" class="auth-sub">
+      یک رمز اصلی انتخاب کنید. این رمز هرگز ذخیره نمی‌شود؛ فقط برای رمزگذاری اطلاعات ورود سرورها و کلید API روی همین دستگاه استفاده می‌شود.
+    </p>
+    <input id="authPassword" type="password" placeholder="رمز اصلی" autocomplete="new-password" />
+    <button id="authSubmit" class="btn btn-primary btn-block">ادامه</button>
+    <div id="authError" class="auth-error hidden"></div>
+  </div>
+</div>
+
+<!-- ============== MAIN APP ============== -->
+<div id="app" class="app hidden">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-name">
+        <span class="logo-mark small">Z</span>
+        <span class="brand-word">enith</span>
+      </span>
+      <span class="brand-tag">پنل رفع خودکار خطاهای سرور</span>
+    </div>
+    <div class="topbar-actions">
+      <button id="themeToggle" class="icon-btn" title="حالت روشن/تاریک">🌗</button>
+      <button id="settingsBtn" class="icon-btn" title="تنظیمات">⚙️</button>
+      <button id="lockBtn" class="icon-btn" title="قفل کردن پنل">🔒</button>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- Sidebar: servers -->
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <h2>سرورها</h2>
+        <button id="addServerBtn" class="btn btn-accent btn-sm">+ افزودن سرور</button>
+      </div>
+      <div id="serverList" class="server-list"></div>
+      <div id="serverListEmpty" class="empty-hint hidden">
+        هنوز سروری اضافه نشده. با «افزودن سرور» شروع کنید.
+      </div>
+    </aside>
+
+    <!-- Main: domains for selected server -->
+    <main class="main-area">
+      <div id="noServerSelected" class="placeholder">
+        <div class="placeholder-icon">🗂️</div>
+        <p>یک سرور را از سمت راست انتخاب کنید تا دامنه‌های آن نمایش داده شود.</p>
+      </div>
+
+      <div id="serverView" class="server-view hidden">
+        <div class="server-view-head">
+          <div>
+            <h2 id="serverViewTitle">—</h2>
+            <span id="serverViewSub" class="muted"></span>
+          </div>
+          <div class="server-view-actions">
+            <span id="serverConnBadge" class="badge">—</span>
+            <button id="reconnectBtn" class="btn btn-ghost btn-sm">اتصال مجدد</button>
+            <button id="refreshDomainsBtn" class="btn btn-ghost btn-sm">↻ بروزرسانی دامنه‌ها</button>
+            <button id="deleteServerBtn" class="btn btn-danger-ghost btn-sm">حذف سرور</button>
+          </div>
+        </div>
+
+        <div id="domainGrid" class="domain-grid"></div>
+        <div id="domainGridEmpty" class="empty-hint hidden">دامنه‌ای برای این سرور پیدا نشد.</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============== MODAL: Add server ============== -->
+<div id="addServerModal" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>افزودن سرور جدید</h3>
+    <label>نام نمایشی</label>
+    <input id="asName" placeholder="مثلاً: سرور اصلی گرین‌وب" />
+
+    <div class="row2">
+      <div>
+        <label>آدرس IP یا دامنه سرور</label>
+        <input id="asHost" placeholder="123.45.67.89" />
+      </div>
+      <div>
+        <label>پورت SSH</label>
+        <input id="asPort" value="22" />
+      </div>
+    </div>
+
+    <label>یوزرنیم SSH</label>
+    <input id="asUsername" placeholder="root" />
+
+    <div class="tabs">
+      <button class="tab-btn active" data-auth="password">رمز عبور</button>
+      <button class="tab-btn" data-auth="key">کلید خصوصی (SSH Key)</button>
+    </div>
+
+    <div id="authPasswordFields">
+      <label>رمز عبور SSH</label>
+      <input id="asPassword" type="password" placeholder="••••••••" />
+    </div>
+
+    <div id="authKeyFields" class="hidden">
+      <label>متن کامل کلید خصوصی</label>
+      <textarea id="asKeyText" rows="5" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea>
+      <label>رمز کلید (اختیاری)</label>
+      <input id="asKeyPassphrase" type="password" placeholder="در صورت وجود" />
+    </div>
+
+    <div id="addServerError" class="form-error hidden"></div>
+
+    <div class="modal-actions">
+      <button id="asCancel" class="btn btn-ghost">انصراف</button>
+      <button id="asSubmit" class="btn btn-primary">تست اتصال و ذخیره</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== MODAL: Settings (API key) ============== -->
+<div id="settingsModal" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>تنظیمات</h3>
+    <label>کلید API مدل هوش مصنوعی (GapGPT / OpenAI-compatible)</label>
+    <input id="apiKeyInput" type="password" placeholder="sk-..." />
+    <p class="hint">این کلید فقط برای لحظه‌ی اجرای بررسی به‌صورت رمزنگاری‌شده روی همان سرور هدف ارسال می‌شود و هرگز در تاریخچه یا لاگ ذخیره نمی‌گردد.</p>
+    <div id="apiKeyStatus" class="muted"></div>
+    <div class="modal-actions">
+      <button id="settingsCancel" class="btn btn-ghost">بستن</button>
+      <button id="apiKeySave" class="btn btn-primary">ذخیره کلید</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== MODAL: Domain detail / investigate ============== -->
+<div id="domainModal" class="modal-overlay hidden">
+  <div class="modal modal-lg">
+    <div class="domain-modal-head">
+      <h3 id="domainModalTitle">—</h3>
+      <button id="domainModalClose" class="icon-btn">✕</button>
+    </div>
+
+    <div id="domainStatusBox" class="status-box">
+      <div class="spinner"></div> در حال بررسی وضعیت…
+    </div>
+
+    <div id="domainActions" class="modal-actions hidden">
+      <button id="recheckBtn" class="btn btn-ghost btn-sm">بررسی دوباره</button>
+      <button id="investigateBtn" class="btn btn-accent hidden">🩺 شروع بررسی و رفع خودکار</button>
+    </div>
+
+    <div id="investigatePanel" class="investigate-panel hidden">
+      <div class="inv-status-bar">
+        <span id="invAgentStatus" class="chip chip-idle">در انتظار</span>
+        <span id="invSiteStatus" class="chip chip-unknown">وضعیت سایت: نامشخص</span>
+        <span id="invTurn" class="muted"></span>
+      </div>
+
+      <div id="invLog" class="inv-log"></div>
+
+      <div id="approvalBox" class="approval-box hidden">
+        <div class="approval-title">⚠ نیاز به تأیید عملیات</div>
+        <div id="approvalDetail"></div>
+        <div class="modal-actions">
+          <button id="denyBtn" class="btn btn-danger-ghost btn-sm">رد کردن</button>
+          <button id="approveBtn" class="btn btn-accent btn-sm">تأیید و اجرا</button>
+        </div>
+      </div>
+
+      <div id="reportBox" class="report-box hidden"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
