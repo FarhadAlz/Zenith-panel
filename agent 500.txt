@@ -1,0 +1,32 @@
+api key
+
+sk-kEME6W5F0KGJNpkZ1Ubm7t7DEAHkJW92BOW86oRIdCNyDUqc
+export OPENAI_API_KEY="sk-qA4kIgOZONawI7ZsczRF46x6MmPbidoF00mR6kDMRLeqa9fm"
+
+
+
+
+
+python3 main.py "My site https://example.com has a 400 Bad Request error."
+
+
+
+python3 main.py "My site https://farhad20.ir is showing 500 Internal Server Error, please inspect."
+
+
+
+
+mv /usr/local/php83/sockets/behrad.sock /usr/local/php83/sockets/behrad.sock.test
+
+مشکل دسترسی ایحنت به بررسی ارور های 502  503
+
+
+مشکل پی اپ پی درست تشخیص میده اما میخواد یک سرویس الکی ری استارت کنه و مشکلش اینه بررسی نمیکنه قبل ری استارت سرویس  درسته و مشکلی نداره اما بعدش درست تشخیص میده مشکلم جیع
+
+
+https://chatgpt.com/share/6a99e0fb-cc9c-83eb-83fa-65bce593a299
+
+
+
+curl -I https://farhad20.ir
+<?php this_function_does_not_exist_1234(); ?>
